@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(python --version; python -m pip --version)",
+      "PowerShell(py *)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\TOSHIBA\\\\Documents\\\\Agentes de IA\\\\Kinga Finance AI\" -Recurse | Where-Object {!$_.PSIsContainer} | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\TOSHIBA\\\\Documents\\\\Agentes de IA\\\\Kinga Finance AI\\\\\", \"\"\\) })",
+      "PowerShell(Start-Sleep -Seconds 4; Invoke-WebRequest -Uri \"http://localhost:8000/health\" -UseBasicParsing -TimeoutSec 5 | Select-Object StatusCode, Content)",
+      "PowerShell(Start-Sleep -Seconds 6; Invoke-WebRequest -Uri \"http://localhost:8501\" -UseBasicParsing -TimeoutSec 8 | Select-Object StatusCode)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Start-Sleep -Seconds 7; Invoke-WebRequest -Uri \"http://localhost:8501\" -UseBasicParsing -TimeoutSec 8 | Select-Object StatusCode)",
+      "PowerShell(New-Item *)",
+      "PowerShell(Move-Item *)"
+    ]
+  }
+}

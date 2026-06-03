@@ -1,0 +1,6 @@
+date,store_id,store_name,channel,amount
+2026-05-01,loja_01,Loja Centro,pdv,1950.50
+2026-05-01,loja_01,Loja Centro,ifood,720.00
+2026-05-01,loja_02,Loja Shopping,pdv,3100.00
+2026-05-01,loja_02,Loja Shopping,ifood,980.00
+2026-05-01,loja_03,Loja Norte,pdv,1250.00
