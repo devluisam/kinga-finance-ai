@@ -13,4 +13,5 @@ class Cost(Base):
     subcategory = Column(String(100), nullable=True)
     unit = Column(String(50), nullable=False)         # fabrica, loja_01, loja_02, admin
     source = Column(String(50), default="manual")
+    phone_number = Column(String(30), nullable=True)  # número de origem (WhatsApp)
     created_at = Column(DateTime, server_default=func.now())

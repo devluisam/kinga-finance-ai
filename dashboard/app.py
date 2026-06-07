@@ -123,6 +123,52 @@ hr { border-color: rgba(108,63,197,0.25) !important; }
 
 .status-lucro   { color:#00C896; font-weight:800; font-size:1.1rem; }
 .status-prejuizo{ color:#FF4B4B; font-weight:800; font-size:1.1rem; }
+
+.tx-card {
+    display: flex;
+    align-items: center;
+    background: rgba(26,16,51,0.8);
+    border-radius: 12px;
+    padding: 14px 18px;
+    margin: 6px 0;
+    border-left: 4px solid transparent;
+    transition: transform 0.15s;
+}
+.tx-card:hover { transform: translateX(3px); }
+.tx-entrada { border-left-color: #00C896; }
+.tx-saida   { border-left-color: #FF4B4B; }
+.tx-icon    { font-size: 1.4rem; margin-right: 14px; }
+.tx-body    { flex: 1; }
+.tx-desc    { font-size: 0.95rem; font-weight: 600; color: #F0E6FF; }
+.tx-meta    { font-size: 0.78rem; color: #6C3FC5; margin-top: 2px; }
+.tx-right   { text-align: right; }
+.tx-amount-entrada { font-size: 1.1rem; font-weight: 800; color: #00C896; }
+.tx-amount-saida   { font-size: 1.1rem; font-weight: 800; color: #FF4B4B; }
+.badge {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+    margin-top: 4px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.badge-receita   { background: rgba(0,200,150,0.15); color: #00C896; border: 1px solid rgba(0,200,150,0.3); }
+.badge-fab       { background: rgba(108,63,197,0.2);  color: #C9B8FF; border: 1px solid rgba(108,63,197,0.4); }
+.badge-loja      { background: rgba(233,30,140,0.15); color: #FF6EC7; border: 1px solid rgba(233,30,140,0.3); }
+.badge-admin     { background: rgba(255,165,0,0.15);  color: #FFB347; border: 1px solid rgba(255,165,0,0.3); }
+.badge-outros    { background: rgba(255,255,255,0.07); color: #9B7FE8; border: 1px solid rgba(255,255,255,0.1); }
+.wa-stat-box {
+    background: linear-gradient(135deg, rgba(37,211,102,0.1) 0%, rgba(18,140,126,0.1) 100%);
+    border: 1px solid rgba(37,211,102,0.25);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+}
+.wa-stat-label { font-size: 0.75rem; color: #25D366; letter-spacing: 0.08em; text-transform: uppercase; }
+.wa-stat-value { font-size: 1.6rem; font-weight: 800; color: #F0E6FF; margin: 4px 0; }
+.wa-stat-sub   { font-size: 0.8rem; color: #9B7FE8; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -145,15 +191,17 @@ with st.sidebar:
 
     st.markdown("---")
     st.markdown("**Período**")
-    year  = st.selectbox("Ano",  [2026, 2025], index=0, label_visibility="collapsed")
-    month = st.selectbox("Mês",  list(range(1, 13)), index=4,
+    _hoje = date.today()
+    year  = st.selectbox("Ano",  [2026, 2025], index=0 if _hoje.year == 2026 else 1, label_visibility="collapsed")
+    month = st.selectbox("Mês",  list(range(1, 13)), index=_hoje.month - 1,
                          format_func=lambda m: MONTHS_PT[m], label_visibility="collapsed")
     refresh = st.button("↻ Atualizar dados", use_container_width=True)
 
     st.markdown("---")
+
     st.markdown("""
-    <div style="font-size:0.75rem;color:#4A3570;text-align:center;padding-top:8px;">
-        Kinga Açaí Frozen · v1.0<br>
+    <div style="font-size:0.75rem;color:#4A3570;text-align:center;padding-top:4px;">
+        Kinga Açaí Frozen · v1.1<br>
         <span style="color:#6C3FC5;">● API conectada</span>
     </div>
     """, unsafe_allow_html=True)
@@ -170,6 +218,15 @@ def fetch_report(year: int, month: int) -> dict | None:
         return None
     except Exception as e:
         st.error(f"Erro: {e}")
+        return None
+
+@st.cache_data(ttl=300)
+def fetch_annual(year: int) -> dict | None:
+    try:
+        r = httpx.get(f"{API_URL}/report/annual/{year}", timeout=20)
+        r.raise_for_status()
+        return r.json()
+    except Exception:
         return None
 
 if refresh:
@@ -190,15 +247,18 @@ if data is None:
     """, unsafe_allow_html=True)
     st.stop()
 
-result   = data.get("result", {})
-stores   = data.get("store_results", [])
-factory  = data.get("factory", {})
-cat_costs= data.get("costs_by_category", {})
-subcat   = data.get("costs_by_subcategory", [])
-weekly   = data.get("weekly_revenue", [])
-alerts   = data.get("alerts", [])
-narrative= data.get("narrative", "")
-period   = data.get("period", f"{month:02d}/{year}")
+result    = data.get("result", {})
+stores    = data.get("store_results", [])
+factory   = data.get("factory", {})
+cat_costs = data.get("costs_by_category", {})
+subcat    = data.get("costs_by_subcategory", [])
+weekly    = data.get("weekly_revenue", [])
+alerts    = data.get("alerts", [])
+forecast  = data.get("forecast", {})
+health    = data.get("health", {})
+channels  = data.get("channel_revenue", {})
+narrative = data.get("narrative", "")
+period    = data.get("period", f"{month:02d}/{year}")
 
 fat   = result.get("faturamento", 0)
 custo = result.get("custos", 0)
@@ -262,9 +322,57 @@ for col, label, value, delta in kpis:
 
 st.markdown("<br>", unsafe_allow_html=True)
 
+# ── Health Score ──────────────────────────────────────────────────────────────
+if health:
+    _hs = health.get("score", 0)
+    _hg = health.get("grade", "—")
+    _hc = health.get("grade_color", "#9B7FE8")
+    _bar_pct = int(_hs)
+    st.markdown(
+        f'<div style="background:rgba(26,16,51,0.8);border:1px solid rgba(108,63,197,0.25);'
+        f'border-radius:12px;padding:14px 20px;margin-bottom:4px;">'
+        f'<div style="display:flex;align-items:center;gap:16px;">'
+        f'<div style="font-size:0.78rem;color:#9B7FE8;text-transform:uppercase;letter-spacing:.08em;min-width:110px;">🏥 Saúde Financeira</div>'
+        f'<div style="flex:1;background:rgba(108,63,197,0.15);border-radius:20px;height:10px;">'
+        f'<div style="width:{_bar_pct}%;background:{_hc};border-radius:20px;height:10px;transition:width .4s;"></div>'
+        f'</div>'
+        f'<div style="font-size:1.1rem;font-weight:800;color:{_hc};min-width:60px;text-align:right;">{_hs:.0f}<span style="font-size:.7rem;color:#9B7FE8;">/100</span></div>'
+        f'<div style="font-size:.85rem;font-weight:700;color:{_hc};min-width:70px;">{_hg}</div>'
+        f'</div></div>',
+        unsafe_allow_html=True,
+    )
+
+# ── Forecast (projeção de fechamento) ─────────────────────────────────────────
+if forecast and forecast.get("dias_restantes", 0) > 0:
+    _fp   = forecast.get("fat_projetado", 0)
+    _fd   = forecast.get("fat_diario", 0)
+    _dr   = forecast.get("dias_restantes", 0)
+    _pct  = forecast.get("pct_mes_decorrido", 0)
+    _tend = forecast.get("tendencia", "")
+    _tend_label = {"ACIMA": "▲ acima do mês ant.", "ABAIXO": "▼ abaixo do mês ant.",
+                   "NO_RITMO": "≈ no ritmo do mês ant."}.get(_tend, "")
+    _tend_color = {"ACIMA": "#00C896", "ABAIXO": "#FF4B4B"}.get(_tend, "#9B7FE8")
+    st.markdown(
+        f'<div style="background:rgba(26,16,51,0.8);border:1px solid rgba(108,63,197,0.25);'
+        f'border-radius:12px;padding:14px 20px;margin-bottom:16px;">'
+        f'<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap;">'
+        f'<div style="font-size:0.78rem;color:#9B7FE8;text-transform:uppercase;letter-spacing:.08em;">📅 Projeção de Fechamento</div>'
+        f'<div style="font-size:1.15rem;font-weight:800;color:#F0E6FF;">R$ {_fp:,.2f}</div>'
+        f'<div style="font-size:0.82rem;color:{_tend_color};">{_tend_label}</div>'
+        f'<div style="margin-left:auto;font-size:0.8rem;color:#6C3FC5;">'
+        f'{_pct:.0f}% do mês · R$ {_fd:,.2f}/dia · {_dr} dias restantes'
+        f'</div></div></div>',
+        unsafe_allow_html=True,
+    )
+
+st.markdown("<br>", unsafe_allow_html=True)
+
 
 # ── Abas principais ───────────────────────────────────────────────────────────
-tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Visão Geral", "🏪 Por Loja", "🏭 Fábrica", "📋 Detalhado", "✏️ Lançamentos"])
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "📊 Visão Geral", "🏪 Por Loja", "🏭 Fábrica",
+    "📋 Detalhado", "📈 Tendência Anual", "✏️ Lançamentos",
+])
 
 
 # ── TAB 1: Visão Geral ────────────────────────────────────────────────────────
@@ -293,6 +401,28 @@ with tab1:
     st.markdown('<div class="chart-card" style="margin-top:16px;">', unsafe_allow_html=True)
     st.plotly_chart(result_waterfall(fat, custo, res), use_container_width=True)
     st.markdown('</div>', unsafe_allow_html=True)
+
+    # Canal de vendas
+    if channels:
+        import plotly.graph_objects as go
+        _ch_labels = {"pdv": "Balcão (PDV)", "ifood": "iFood",
+                      "delivery": "Delivery", "whatsapp": "WhatsApp"}
+        _ch_names = [_ch_labels.get(k, k) for k in channels]
+        _ch_vals = list(channels.values())
+        fig_ch = go.Figure(go.Pie(
+            labels=_ch_names, values=_ch_vals, hole=0.55,
+            marker_colors=["#6C3FC5", "#E91E8C", "#00C896", "#FFB347"],
+            textinfo="label+percent", textfont_size=11,
+        ))
+        fig_ch.update_layout(
+            title=dict(text="Receitas por Canal", font=dict(color="#C9B8FF", size=13)),
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#C9B8FF"), showlegend=False,
+            margin=dict(t=40, b=10, l=10, r=10), height=240,
+        )
+        st.markdown('<div class="chart-card" style="margin-top:16px;">', unsafe_allow_html=True)
+        st.plotly_chart(fig_ch, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
 
     # Alertas inline
     st.markdown('<div class="section-title">Alertas Inteligentes</div>', unsafe_allow_html=True)
@@ -434,8 +564,93 @@ with tab4:
             except Exception as e:
                 st.error(f"Erro: {e}")
 
-# ── TAB 5: Lançamentos ───────────────────────────────────────────────────────
+# ── TAB 5: Tendência Anual ───────────────────────────────────────────────────
 with tab5:
+    import plotly.graph_objects as go
+
+    annual_data = fetch_annual(year)
+    if not annual_data:
+        st.info("Sem dados anuais disponíveis.")
+    else:
+        months_data = annual_data.get("months", [])
+        total_fat_y = annual_data.get("total_faturamento", 0)
+        total_custo_y = annual_data.get("total_custos", 0)
+        total_res_y = annual_data.get("total_resultado", 0)
+
+        ay1, ay2, ay3 = st.columns(3)
+        ay1.metric("Faturamento Anual", f"R$ {total_fat_y:,.2f}")
+        ay2.metric("Custos Anuais", f"R$ {total_custo_y:,.2f}")
+        ay3.metric("Resultado Anual", f"R$ {total_res_y:,.2f}",
+                   delta="LUCRO" if total_res_y >= 0 else "PREJUÍZO")
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        names = [m["month_short"] for m in months_data]
+        fats  = [m["faturamento"] for m in months_data]
+        costs = [m["custos"] for m in months_data]
+        margins = [m["margem_pct"] for m in months_data]
+
+        # Gráfico barras faturamento + custos
+        fig_ann = go.Figure()
+        fig_ann.add_trace(go.Bar(name="Faturamento", x=names, y=fats,
+                                  marker_color="#6C3FC5"))
+        fig_ann.add_trace(go.Bar(name="Custos", x=names, y=costs,
+                                  marker_color="#E91E8C"))
+        fig_ann.update_layout(
+            title=dict(text=f"Faturamento vs Custos — {year}", font=dict(color="#C9B8FF", size=14)),
+            barmode="group",
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#C9B8FF"),
+            xaxis=dict(gridcolor="rgba(108,63,197,0.2)"),
+            yaxis=dict(gridcolor="rgba(108,63,197,0.2)", tickprefix="R$ "),
+            legend=dict(font=dict(color="#C9B8FF")),
+            margin=dict(t=50, b=20, l=20, r=20), height=320,
+        )
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.plotly_chart(fig_ann, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Gráfico linha de margem
+        st.markdown("<br>", unsafe_allow_html=True)
+        fig_mg = go.Figure()
+        fig_mg.add_trace(go.Scatter(
+            x=names, y=margins, mode="lines+markers+text",
+            line=dict(color="#00C896", width=2),
+            marker=dict(size=7),
+            text=[f"{v:.1f}%" for v in margins],
+            textposition="top center",
+            textfont=dict(size=10, color="#C9B8FF"),
+            name="Margem %",
+        ))
+        fig_mg.add_hline(y=15, line_dash="dot", line_color="#FFB347",
+                         annotation_text="Mínimo ideal (15%)",
+                         annotation_font=dict(color="#FFB347", size=10))
+        fig_mg.update_layout(
+            title=dict(text=f"Margem Operacional Mensal — {year}", font=dict(color="#C9B8FF", size=14)),
+            paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
+            font=dict(color="#C9B8FF"),
+            xaxis=dict(gridcolor="rgba(108,63,197,0.2)"),
+            yaxis=dict(gridcolor="rgba(108,63,197,0.2)", ticksuffix="%"),
+            margin=dict(t=50, b=20, l=20, r=20), height=280,
+        )
+        st.markdown('<div class="chart-card">', unsafe_allow_html=True)
+        st.plotly_chart(fig_mg, use_container_width=True)
+        st.markdown('</div>', unsafe_allow_html=True)
+
+        # Tabela resumo
+        st.markdown('<div class="section-title">Resumo Mensal</div>', unsafe_allow_html=True)
+        df_ann = pd.DataFrame(months_data)
+        if not df_ann.empty:
+            df_show_ann = df_ann[["month_name","faturamento","custos","resultado","margem_pct"]].copy()
+            df_show_ann.columns = ["Mês","Faturamento","Custos","Resultado","Margem %"]
+            for c in ["Faturamento","Custos","Resultado"]:
+                df_show_ann[c] = df_show_ann[c].apply(lambda v: f"R$ {v:,.2f}")
+            df_show_ann["Margem %"] = df_show_ann["Margem %"].apply(lambda v: f"{v:.1f}%")
+            st.dataframe(df_show_ann, use_container_width=True, hide_index=True)
+
+
+# ── TAB 6: Lançamentos ───────────────────────────────────────────────────────
+with tab6:
 
     # ── Helpers de dados ──────────────────────────────────────────────────────
     @st.cache_data(ttl=3600)
@@ -477,7 +692,8 @@ with tab5:
     UNITS_ALL = [s["store_id"] for s in all_stores] or UNITS_META
 
     subtab_a, subtab_b, subtab_c, subtab_d, subtab_e, subtab_f = st.tabs([
-        "➕ Nova Venda", "➕ Novo Custo", "📄 Gerenciar Vendas", "📄 Gerenciar Custos", "🏪 Lojas", "🔒 Segurança"
+        "➕ Nova Venda", "➕ Novo Custo", "📄 Gerenciar Vendas", "📄 Gerenciar Custos",
+        "🏪 Lojas", "🔒 Segurança",
     ])
 
     # ── SUB-TAB A: Nova Venda ─────────────────────────────────────────────────
@@ -644,13 +860,15 @@ with tab5:
             df_view = df_view.sort_values("date", ascending=False)
             df_view["amount_fmt"]  = df_view["amount"].apply(lambda v: f"R$ {v:,.2f}")
             df_view["channel_fmt"] = df_view["channel"].map(
-                {"pdv":"Balcão","ifood":"iFood","delivery":"Delivery"}
+                {"pdv":"Balcão","ifood":"iFood","delivery":"Delivery","whatsapp":"WhatsApp"}
             ).fillna(df_view["channel"])
+            df_view["desc_fmt"] = df_view.get("description", pd.Series([""] * len(df_view))).fillna("")
 
             st.dataframe(
-                df_view[["id","date","store_name","channel_fmt","amount_fmt","source"]].rename(
+                df_view[["id","date","store_name","channel_fmt","desc_fmt","amount_fmt","source"]].rename(
                     columns={"id":"ID","date":"Data","store_name":"Loja",
-                             "channel_fmt":"Canal","amount_fmt":"Valor","source":"Origem"}
+                             "channel_fmt":"Canal","desc_fmt":"Descrição",
+                             "amount_fmt":"Valor","source":"Origem"}
                 ),
                 use_container_width=True, hide_index=True, height=280,
             )
@@ -1030,6 +1248,8 @@ with tab5:
                 st.info("Nenhum backup ainda. Será criado na próxima vez que o sistema iniciar.")
         except Exception:
             st.warning("Não foi possível listar backups.")
+
+
 
 
 st.markdown("---")

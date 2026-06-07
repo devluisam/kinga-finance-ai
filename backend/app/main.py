@@ -1,6 +1,8 @@
 import os
 import shutil
 from datetime import datetime
+from dotenv import load_dotenv
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
@@ -62,12 +64,40 @@ def startup_event():
     db = SessionLocal()
     try:
         from sqlalchemy import text
+
+        # Migração: adiciona coluna description em sales se não existir
+        try:
+            db.execute(text("ALTER TABLE sales ADD COLUMN description VARCHAR(200)"))
+            db.commit()
+            print("[MIGRATE] Coluna 'description' adicionada à tabela sales.")
+        except Exception:
+            pass  # coluna já existe
+        try:
+            db.execute(text("ALTER TABLE sales ADD COLUMN category VARCHAR(100)"))
+            db.commit()
+        except Exception:
+            pass
+        try:
+            db.execute(text("ALTER TABLE sales ADD COLUMN subcategory VARCHAR(100)"))
+            db.commit()
+        except Exception:
+            pass
+        try:
+            db.execute(text("ALTER TABLE sales ADD COLUMN phone_number VARCHAR(30)"))
+            db.commit()
+        except Exception:
+            pass
+        try:
+            db.execute(text("ALTER TABLE costs ADD COLUMN phone_number VARCHAR(30)"))
+            db.commit()
+        except Exception:
+            pass
+
         count = db.execute(text("SELECT COUNT(*) FROM sales")).scalar()
         if count == 0:
             print("[SEED] Nenhum dado encontrado. Inserindo dados de simulacao...")
             seed(db, clear=False)
         else:
-            # Faz backup automático ao iniciar com dados reais
             backup = _backup_db()
             if backup:
                 print(f"[BACKUP] Backup criado: {os.path.basename(backup)}")
