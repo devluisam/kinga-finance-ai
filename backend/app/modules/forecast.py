@@ -31,11 +31,13 @@ class ForecastReport:
     custo_projetado: float
     resultado_projetado: float
     margem_projetada: float
+    # Break-even
+    break_even_dias: float          # dias de vendas (no ritmo atual) para cobrir os custos projetados
+    break_even_pct_mes: float       # break_even_dias / total_dias × 100
     # Comparação com referência (mês anterior)
     fat_referencia: float
-    variacao_vs_referencia: float   # % de variação projetada vs mês anterior
+    variacao_vs_referencia: float
     tendencia: str                  # "ACIMA" | "ABAIXO" | "NO_RITMO" | "SEM_REFERENCIA"
-    # Ritmo necessário para bater o mês anterior
     fat_diario_necessario: float
 
 
@@ -106,6 +108,10 @@ def project_month(
     else:
         fat_diario_necessario = fat_diario
 
+    # Break-even: quantos dias de vendas (no ritmo atual) cobrem os custos projetados
+    break_even_dias = round(custo_projetado / fat_diario, 1) if fat_diario > 0 else 0.0
+    break_even_pct = round(break_even_dias / total_dias * 100, 1) if total_dias > 0 else 0.0
+
     return ForecastReport(
         dia_atual=dia_atual,
         total_dias=total_dias,
@@ -120,6 +126,8 @@ def project_month(
         custo_projetado=custo_projetado,
         resultado_projetado=resultado_projetado,
         margem_projetada=margem_projetada,
+        break_even_dias=break_even_dias,
+        break_even_pct_mes=break_even_pct,
         fat_referencia=round(fat_mes_anterior, 2),
         variacao_vs_referencia=variacao,
         tendencia=tendencia,

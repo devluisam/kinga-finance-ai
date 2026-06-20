@@ -35,7 +35,8 @@ def list_sales(
         {
             "id": s.id, "date": str(s.date), "store_id": s.store_id,
             "store_name": s.store_name, "channel": s.channel,
-            "amount": s.amount, "source": s.source,
+            "amount": s.amount, "description": s.description or "",
+            "source": s.source,
         }
         for s in rows
     ]

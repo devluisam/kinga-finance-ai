@@ -9,7 +9,9 @@ from datetime import date
 
 from components.charts import (
     gauge_chart, donut_chart, bar_store_comparison,
-    margin_bar, weekly_line, factory_bar, result_waterfall,
+    margin_bar, weekly_line, daily_bar, factory_bar,
+    result_waterfall, pareto_costs as chart_pareto,
+    category_trend_area, compare_bar,
 )
 from components.alerts_ui import render_alerts
 
@@ -254,11 +256,15 @@ cat_costs = data.get("costs_by_category", {})
 subcat    = data.get("costs_by_subcategory", [])
 weekly    = data.get("weekly_revenue", [])
 alerts    = data.get("alerts", [])
-forecast  = data.get("forecast", {})
-health    = data.get("health", {})
-channels  = data.get("channel_revenue", {})
-narrative = data.get("narrative", "")
-period    = data.get("period", f"{month:02d}/{year}")
+forecast     = data.get("forecast", {})
+health       = data.get("health", {})
+channels     = data.get("channel_revenue", {})
+top_costs_d  = data.get("top_costs", [])
+growing_c_d  = data.get("growing_costs", [])
+pareto_d     = data.get("pareto_costs", [])
+daily_rev    = data.get("daily_revenue", [])
+narrative    = data.get("narrative", "")
+period       = data.get("period", f"{month:02d}/{year}")
 
 fat   = result.get("faturamento", 0)
 custo = result.get("custos", 0)
@@ -327,18 +333,33 @@ if health:
     _hs = health.get("score", 0)
     _hg = health.get("grade", "—")
     _hc = health.get("grade_color", "#9B7FE8")
-    _bar_pct = int(_hs)
+    _det = health.get("detalhes", {})
+    _dim_labels = {"margem": "Margem", "crescimento": "Crescimento",
+                   "controle_custo": "Custo Ctrl", "resultado": "Resultado"}
+    _dim_maxes = {"margem": 35, "crescimento": 25, "controle_custo": 25, "resultado": 15}
+    dims_html = "".join(
+        f'<div style="flex:1;text-align:center;">'
+        f'<div style="font-size:.65rem;color:#6C3FC5;margin-bottom:3px;">{_dim_labels.get(k,k)}</div>'
+        f'<div style="background:rgba(108,63,197,0.15);border-radius:4px;height:6px;overflow:hidden;">'
+        f'<div style="width:{int(v/_dim_maxes.get(k,1)*100)}%;background:{_hc};height:6px;"></div>'
+        f'</div>'
+        f'<div style="font-size:.65rem;color:#9B7FE8;margin-top:2px;">{v}/{_dim_maxes.get(k,1)}</div>'
+        f'</div>'
+        for k, v in _det.items()
+    )
     st.markdown(
         f'<div style="background:rgba(26,16,51,0.8);border:1px solid rgba(108,63,197,0.25);'
         f'border-radius:12px;padding:14px 20px;margin-bottom:4px;">'
-        f'<div style="display:flex;align-items:center;gap:16px;">'
+        f'<div style="display:flex;align-items:center;gap:16px;margin-bottom:8px;">'
         f'<div style="font-size:0.78rem;color:#9B7FE8;text-transform:uppercase;letter-spacing:.08em;min-width:110px;">🏥 Saúde Financeira</div>'
         f'<div style="flex:1;background:rgba(108,63,197,0.15);border-radius:20px;height:10px;">'
-        f'<div style="width:{_bar_pct}%;background:{_hc};border-radius:20px;height:10px;transition:width .4s;"></div>'
+        f'<div style="width:{int(_hs)}%;background:{_hc};border-radius:20px;height:10px;"></div>'
         f'</div>'
         f'<div style="font-size:1.1rem;font-weight:800;color:{_hc};min-width:60px;text-align:right;">{_hs:.0f}<span style="font-size:.7rem;color:#9B7FE8;">/100</span></div>'
         f'<div style="font-size:.85rem;font-weight:700;color:{_hc};min-width:70px;">{_hg}</div>'
-        f'</div></div>',
+        f'</div>'
+        f'<div style="display:flex;gap:12px;">{dims_html}</div>'
+        f'</div>',
         unsafe_allow_html=True,
     )
 
