@@ -4,6 +4,14 @@ Sistema de análise financeira para um pequeno comércio com várias lojas e uma
 importa vendas e custos, classifica as despesas sozinho, calcula o resultado por loja e
 aponta o que precisa de atenção.
 
+> **Sobre o “AI” do nome.** Não há modelo de linguagem nem machine learning aqui: a
+> classificação de custos, os alertas e o relatório em texto saem de regras
+> determinísticas, escritas para o vocabulário deste comércio. Foi uma decisão, não
+> uma limitação — a categorização precisa ser **auditável** (dá para apontar qual termo
+> classificou cada lançamento), **reproduzível** (o mesmo CSV dá sempre o mesmo
+> resultado) e **sem custo por requisição**. Onde um modelo ajudaria de fato — o resto
+> que as regras não alcançam — está no roadmap, com Ollama local.
+
 ## Sobre o projeto
 
 Um comércio pequeno costuma fechar o mês em planilha. O dono sabe quanto entrou, mas não
