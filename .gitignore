@@ -1,7 +1,20 @@
-﻿node_modules/
-.env
-data/backups/
-data/*.db
+# Python
 __pycache__/
-*.pyc
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Ambiente e segredos
+.env
+.env.local
+
+# Banco de dados e backups locais
+data/*.db
+data/backups/
+
+# Ferramentas
 .claude/
+node_modules/
+.DS_Store
