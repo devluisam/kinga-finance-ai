@@ -9,9 +9,8 @@ from datetime import date
 
 from components.charts import (
     gauge_chart, donut_chart, bar_store_comparison,
-    margin_bar, weekly_line, daily_bar, factory_bar,
-    result_waterfall, pareto_costs as chart_pareto,
-    category_trend_area, compare_bar,
+    margin_bar, weekly_line, factory_bar,
+    result_waterfall,
 )
 from components.alerts_ui import render_alerts
 
